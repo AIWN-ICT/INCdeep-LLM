@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 numpy>=1.23
 pandas>=1.5
 torch>=2.0
@@ -5,4 +6,13 @@ tqdm>=4.66
 python-dotenv>=1.0
 langchain-core>=0.3
 langchain-openai>=0.2
+=======
+numpy>=1.23
+pandas>=1.5
+torch>=2.0
+tqdm>=4.66
+python-dotenv>=1.0
+langchain-core>=0.3
+langchain-openai>=0.2
+>>>>>>> 7d2f6d8c28f3c5b7e47d00807eec56d14f052984
 openai>=1.0
