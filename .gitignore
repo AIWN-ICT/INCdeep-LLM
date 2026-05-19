@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Python cache
 __pycache__/
 *.py[cod]
@@ -44,50 +43,3 @@ models/**
 !models/examples/
 !models/examples/**
 models/checkpoints/**
-=======
-# Python cache
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environments
-.venv/
-venv/
-env/
-
-# IDE/editor
-.vscode/
-.idea/
-*.swp
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Build / packaging
-build/
-dist/
-*.egg-info/
-
-# Runtime artifacts
-*.log
-
-# Environment / secrets
-.env
-.env.*
-!.env.example
-
-# Experiment outputs (regenerable)
-result/*.txt
-result/*.csv
-Packet_log/*.csv
-
-# Model artifacts policy:
-# - track only models/examples/** for demo docs
-# - keep training checkpoints untracked
-models/**
-!models/
-!models/examples/
-!models/examples/**
-models/checkpoints/**
->>>>>>> 7d2f6d8c28f3c5b7e47d00807eec56d14f052984
