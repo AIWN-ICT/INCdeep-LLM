@@ -51,6 +51,7 @@ def build_parser():
     parser.add_argument("--model-dir", default=str(DEFAULT_MODEL_DIR), help="Directory for saving best model files")
     parser.add_argument("--result-dir", default=str(DEFAULT_RESULT_DIR), help="Directory for generated outputs")
     parser.add_argument("--best-state", default=str(DEFAULT_MODEL_DIR / "best_epoch.pkl"), help="Path to save best random state")
+    parser.add_argument("--eval-interval", type=int, default=None, help="Override evaluation interval at runtime (episodes)")
     parser.add_argument("--skip-compile", action="store_true", help="Disable torch.compile for compatibility")
     return parser
 
@@ -422,6 +423,14 @@ def main(argv=None):
     max_source_sends = config["max_source_sends_per_episode"]
     episodes = config["num_episodes"]
     max_test = config["num_eval_episodes"]
+    config_eval_interval = max(1, int(config["eval_interval"]))
+    if args.eval_interval is not None:
+        if args.eval_interval < 1:
+            raise ValueError("--eval-interval must be >= 1")
+        eval_interval = args.eval_interval
+    else:
+        eval_interval = config_eval_interval
+    force_eval_at_end = bool(config["force_eval_at_end"])
     extrinsic_reward = config["extrinsic_reward"]
     parallel_path = config["num_parallel_paths"]
     max_nb = config["max_neighbor_count"]
@@ -479,9 +488,58 @@ def main(argv=None):
             print(" ", file=fz)
 
         previous_best = best_avg_source_send
-        show_eval_progress = ((episode_idx + 1) % 10 == 0)
+        should_evaluate = ((episode_idx + 1) % eval_interval == 0)
+        if should_evaluate:
+            show_eval_progress = True
+            best_avg_source_send, avg_overhead, avg_s_f, is_best, best_state = run_evaluate(
+                e=episode_idx,
+                Max_test=max_test,
+                Max_s_f=max_source_sends,
+                node_num=node_num,
+                K=K,
+                M=M,
+                S_state_size=source_state_size,
+                R_state_size=relay_state_size,
+                source_id=source_id,
+                neighbor_matrix=neighbor_matrix,
+                links=links,
+                extrinsic_reward=extrinsic_reward,
+                agent_s=agent_s,
+                agent_r=agent_r,
+                best_state_path=best_state_path,
+                result_dir=result_dir,
+                model_dir=model_dir,
+                min_f=best_avg_source_send,
+                source_send_count_list=source_send_count_list,
+                test_log_filename=EVAL_SOURCE_SEND_LOG,
+                reward_log_filename=EVAL_REWARD_LOG,
+                show_test_progress=show_eval_progress,
+            )
+
+            if is_best:
+                best_avg_source_send = avg_s_f
+                agent_s.save_network(path=str(best_model_dir / "dqn_agent_s_min.pt"))
+                agent_r.save_network(path=str(best_model_dir / "dqn_agent_r_min.pt"))
+                with open(best_model_dir / "best_epoch.pkl", "wb") as f:
+                    pickle.dump({"best_state": best_state}, f)
+                with open(best_model_dir / "best_metric.txt", "w", encoding="utf-8") as f:
+                    f.write(f"episode={episode_idx}\n")
+                    f.write(f"avg_source_send={avg_s_f}\n")
+                    f.write(f"previous_best={previous_best}\n")
+
+        elapsed_time = time.time() - start_time
+        average_time = elapsed_time / (episode_idx + 1)
+        remaining_time = average_time * (episodes - (episode_idx + 1))
+        if episode_idx % 10 == 0:
+            print("\r episode: %d, remaining: %d s" % (episode_idx, remaining_time), end="")
+
+    last_episode_already_evaluated = (episodes % eval_interval == 0)
+    should_force_final_eval = force_eval_at_end and episodes > 0 and (not last_episode_already_evaluated)
+    if should_force_final_eval:
+        final_episode_idx = episodes - 1
+        previous_best = best_avg_source_send
         best_avg_source_send, avg_overhead, avg_s_f, is_best, best_state = run_evaluate(
-            e=episode_idx,
+            e=final_episode_idx,
             Max_test=max_test,
             Max_s_f=max_source_sends,
             node_num=node_num,
@@ -502,7 +560,7 @@ def main(argv=None):
             source_send_count_list=source_send_count_list,
             test_log_filename=EVAL_SOURCE_SEND_LOG,
             reward_log_filename=EVAL_REWARD_LOG,
-            show_test_progress=show_eval_progress,
+            show_test_progress=True,
         )
 
         if is_best:
@@ -512,16 +570,9 @@ def main(argv=None):
             with open(best_model_dir / "best_epoch.pkl", "wb") as f:
                 pickle.dump({"best_state": best_state}, f)
             with open(best_model_dir / "best_metric.txt", "w", encoding="utf-8") as f:
-                f.write(f"episode={episode_idx}\n")
+                f.write(f"episode={final_episode_idx}\n")
                 f.write(f"avg_source_send={avg_s_f}\n")
                 f.write(f"previous_best={previous_best}\n")
-
-        elapsed_time = time.time() - start_time
-        average_time = elapsed_time / (episode_idx + 1)
-        remaining_time = average_time * (episodes - (episode_idx + 1))
-        if episode_idx % 10 == 0:
-            print("\r episode: %d, remaining: %d s" % (episode_idx, remaining_time), end="")
-
 
 
 if __name__ == "__main__":

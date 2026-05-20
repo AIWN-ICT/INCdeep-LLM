@@ -23,6 +23,12 @@ Train:
 python main.py train
 ```
 
+Temporarily override the evaluation interval (without modifying `config.py`):
+
+```bash
+python main.py train --eval-interval 5
+```
+
 Test with example checkpoint:
 
 ```bash
@@ -158,6 +164,17 @@ Model-to-env routing:
 
 ## RL training and evaluation
 
+### Reward logging
+
+During evaluation (`evaluate.py`), reward and packet metrics use the following consistent definitions:
+
+1. In each evaluation episode, rewards from all forwarding/coding actions (source + relays, across all time steps) are accumulated into `total_reward`.
+2. Let `source_send_count` denote the episode source-send count (the same per-episode quantity used for **`avg_s_f`**).
+3. The episode reward is normalized by this `source_send_count`:
+   - `normalized_reward = total_reward / source_send_count` (with zero-protection in code).
+4. `evaluation_reward.txt` records the mean `normalized_reward` over all evaluation episodes.
+5. `evaluation_avg_source_sends.txt` records **`avg_s_f`**, i.e., the mean `source_send_count` over all evaluation episodes.
+
 Best checkpoint is selected by minimizing **`avg_s_f`**.
 
 Best files are saved to:
@@ -185,6 +202,8 @@ Most impactful parameters:
 - `K` / `generation_size`: symbols per generation
 - `M` / `relay_memory_rows`: relay coding-memory depth
 - `num_episodes`: training episodes
+- `Eval_interval`: run test every N training episodes
+- `Force_eval_at_end`: if tail episodes are fewer than `Eval_interval`, force one final test at the end
 - `max_source_sends_per_episode` (`Max_s_f`): per-episode source-send cap
 - `epsilon_decay_episodes`: exploration decay length
 

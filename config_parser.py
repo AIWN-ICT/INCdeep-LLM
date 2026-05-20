@@ -20,6 +20,8 @@ def load_config():
         # Preferred semantic keys
         "num_episodes": config.EPISODES,
         "num_eval_episodes": config.Max_test,
+        "eval_interval": config.Eval_interval,
+        "force_eval_at_end": config.Force_eval_at_end,
         "generation_size": config.K,
         "relay_memory_rows": config.M,
         "device": config.device,
@@ -53,6 +55,8 @@ def load_config():
         {
             "EPISODES": cfg["num_episodes"],
             "Max_test": cfg["num_eval_episodes"],
+            "Eval_interval": cfg["eval_interval"],
+            "Force_eval_at_end": cfg["force_eval_at_end"],
             "K": cfg["generation_size"],
             "M": cfg["relay_memory_rows"],
             "R": cfg["relay_memory_rows"],

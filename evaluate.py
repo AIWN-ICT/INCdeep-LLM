@@ -274,7 +274,11 @@ def run_evaluate(
                 if np.linalg.matrix_rank(test_nodelist[node_num - 1].datamemory) == K:
                     break
 
-        avg_reward += total_reward
+        # Normalize episode reward by source send count for this episode
+        # before averaging across evaluation episodes.
+        normalized_reward = total_reward / max(source_send_count, 1)
+
+        avg_reward += normalized_reward
         source_send_count_list.append(source_send_count)
         avg_source_send += source_send_count
         avg_overhead += (1 / K) * (len(test_nodelist[node_num - 1].datamemory) - K) * 100
