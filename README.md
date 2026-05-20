@@ -29,6 +29,14 @@ Test with example checkpoint:
 python main.py test --model-dir ./models/examples/best_by_avg_source_send
 ```
 
+If you run `test.py` directly, you can explicitly point to a training output directory:
+
+```bash
+python test.py --model-dir models/best_by_avg_source_send --best-state models/best_by_avg_source_send/best_epoch.pkl
+```
+
+If these arguments are not provided, `test.py` falls back to its default paths.
+
 > If `torch.compile` is unstable in your environment, add `--skip-compile`.
 
 ---

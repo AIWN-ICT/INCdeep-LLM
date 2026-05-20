@@ -195,6 +195,7 @@ def run_evaluate(
     source_send_count_list,
     test_log_filename="evaluation_avg_source_sends.txt",
     reward_log_filename="evaluation_reward.txt",
+    show_test_progress=True,
 ):
     """Run evaluation episodes and aggregate metrics.
 
@@ -221,6 +222,7 @@ def run_evaluate(
         source_send_count_list: Collector for per-episode source-send counts.
         test_log_filename: Filename for average source-send logs.
         reward_log_filename: Filename for reward logs.
+        show_test_progress: Whether to print per-test remaining time.
 
     Returns:
         tuple[float, float, float, bool, tuple]:
@@ -277,10 +279,11 @@ def run_evaluate(
         avg_source_send += source_send_count
         avg_overhead += (1 / K) * (len(test_nodelist[node_num - 1].datamemory) - K) * 100
 
-        elapsed_time = time.time() - start_time
-        average_time = elapsed_time / (test_idx + 1)
-        remaining_time = average_time * (Max_test - (test_idx + 1))
-        print("\r test: %d, remaining: %d s" % (test_idx, remaining_time), end="")
+        if show_test_progress:
+            elapsed_time = time.time() - start_time
+            average_time = elapsed_time / (test_idx + 1)
+            remaining_time = average_time * (Max_test - (test_idx + 1))
+            print("\r test: %d, remaining: %d s" % (test_idx, remaining_time), end="")
 
     avg_source_send /= Max_test
     avg_reward /= Max_test

@@ -83,7 +83,13 @@ def resolve_paths(args):
 
     best_state_path = Path(args.best_state)
     if not best_state_path.is_absolute():
-        best_state_path = model_dir / best_state_path
+        # Relative best-state handling:
+        # - `best_epoch.pkl` -> resolve inside `model_dir`
+        # - `models/.../best_epoch.pkl` -> resolve from project BASE_DIR
+        if best_state_path.parent == Path("."):
+            best_state_path = model_dir / best_state_path
+        else:
+            best_state_path = BASE_DIR / best_state_path
 
     os.makedirs(result_dir, exist_ok=True)
     return result_dir, model_dir, best_state_path

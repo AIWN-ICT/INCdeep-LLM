@@ -8,7 +8,7 @@ __pycache__/
 venv/
 env/
 
-# IDE/editor
+# IDE / editor
 .vscode/
 .idea/
 *.swp
@@ -30,10 +30,12 @@ dist/
 .env.*
 !.env.example
 
-# Experiment outputs (regenerable)
-result/*.txt
-result/*.csv
-Packet_log/*.csv
+# Experiment outputs (keep folder structure, ignore generated files)
+result/*
+!result/.gitkeep
+
+Packet_log/*
+!Packet_log/.gitkeep
 
 # Model artifacts policy:
 # - track only models/examples/** for demo docs

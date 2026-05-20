@@ -479,6 +479,7 @@ def main(argv=None):
             print(" ", file=fz)
 
         previous_best = best_avg_source_send
+        show_eval_progress = ((episode_idx + 1) % 10 == 0)
         best_avg_source_send, avg_overhead, avg_s_f, is_best, best_state = run_evaluate(
             e=episode_idx,
             Max_test=max_test,
@@ -501,6 +502,7 @@ def main(argv=None):
             source_send_count_list=source_send_count_list,
             test_log_filename=EVAL_SOURCE_SEND_LOG,
             reward_log_filename=EVAL_REWARD_LOG,
+            show_test_progress=show_eval_progress,
         )
 
         if is_best:
