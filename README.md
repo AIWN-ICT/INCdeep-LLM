@@ -1,7 +1,7 @@
 # INCdeep-LLM
 
-![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
-![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/AIWN-ICT/INCdeep-LLM/blob/main/LICENSE)
 ![Status](https://img.shields.io/badge/Status-Research%20Prototype-orange)
 
 INCdeep-LLM is a two-stage workflow for adaptive network coding:
