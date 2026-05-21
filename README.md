@@ -58,8 +58,8 @@ python reward_pipeline_cli.py --mode both
 ```
 
 2. Select a reward candidate:
-   - `auto_eval_reward_function_ranking.csv` (overall ranking)
-   - `auto_eval_scores_by_reward_function.csv` (per-evaluator consistency)
+   - `result/LLM_reward/auto_eval_reward_function_ranking.csv` (overall ranking)
+   - `result/LLM_reward/auto_eval_scores_by_reward_function.csv` (per-evaluator consistency)
 
 3. Integrate selected reward logic into `simulator.py` (`forward_data(...)`, optionally `calculate_reward(...)`).
 4. Train RL agents:
@@ -91,8 +91,9 @@ python main.py train
 1. **Stage1 (generation)**
    - Iterates models from `EVALUATION_MODELS` in `reward_config.py`.
    - Selects Chinese/English prompts via `MODEL_LANGUAGE_OVERRIDES`.
-   - Calls each model through `ChatOpenAI`, extracts function code, and writes:
+   - Calls each model through `ChatOpenAI`, extracts function code, and writes (by default) to `result/LLM_reward/`:
      - `reward_generation_results.json`
+     - `reward_generation_functions.csv`
 
 2. **Stage2 (cross-model evaluation)**
    - Uses successful Stage1 candidates (requires at least 2).
@@ -107,8 +108,8 @@ python main.py train
    - Final ranking = average total score.
 
 3. **Best-candidate export**
-   - Exports best candidate to `best_reward_function.py`.
-   - Writes summary to `two_stage_summary.json`.
+   - Exports best candidate to `result/LLM_reward/best_reward_function.py`.
+   - Writes summary to `result/LLM_reward/two_stage_summary.json`.
 
 ### CLI usage
 
@@ -132,26 +133,24 @@ python reward_pipeline_cli.py --mode stage2
 
 Optional arguments:
 
-- `--generation-output` (default: `reward_generation_results.json`)
-- `--best-output` (default: `best_reward_function.py`)
-- `--summary-output` (default: `two_stage_summary.json`)
+- `--output-dir` (default: `result/LLM_reward`)
+- `--generation-output` (default: `<output-dir>/reward_generation_results.json`)
+- `--generation-csv-output` (default: `<output-dir>/reward_generation_functions.csv`)
+- `--best-output` (default: `<output-dir>/best_reward_function.py`)
+- `--summary-output` (default: `<output-dir>/two_stage_summary.json`)
 
 ### Environment variables (validated at startup)
 
 Required:
 
-- `GROUP1_API_KEY`, `GROUP1_BASE_URL`
-- `GROUP2_API_KEY`, `GROUP2_BASE_URL`
-- `HUNYUAN_API_KEY`, `HUNYUAN_BASE_URL`
-- `DOUBAO_API_KEY`, `DOUBAO_BASE_URL`
+- `API_KEY`
+- `BASE_URL`
 
-Model-to-env routing:
-
-- default -> `GROUP1_*`
-- `qwq-plus` -> `GROUP2_*`
-- `doubao-1-5-thinking-pro-250415` -> `DOUBAO_*`
+All configured generation/evaluation models use the same API credential and endpoint.
 
 ### Stage2 output files
+
+Default location: `result/LLM_reward/` (or the directory passed via `--output-dir`).
 
 - `auto_eval_reward_function_ranking.csv`
 - `auto_eval_scores_by_reward_function.csv`

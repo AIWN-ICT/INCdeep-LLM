@@ -14,19 +14,13 @@ from tqdm import tqdm
 from data_processor import sanitize_filename
 from reward_config import (
     DEFAULT_PROMPT_LANGUAGE,
-    FORMAT_INSTRUCTION,
-    GROUP1_KEY,
-    GROUP1_URL,
-    GROUP2_KEY,
-    GROUP2_URL,
-    GROUP3_KEY,
-    GROUP3_URL,
-    GROUP4_KEY,
-    GROUP4_URL,
     EVALUATION_MODELS,
+    FORMAT_INSTRUCTION,
     MODEL_LANGUAGE_OVERRIDES,
     OUTPUT_KEYS,
     PROMPT_SUFFIX_BY_LANGUAGE,
+    UNIFIED_API_KEY,
+    UNIFIED_BASE_URL,
 )
 from reward_prompt_templates import PROMPTS_BY_LANGUAGE
 from reward_prompt_assets import REWARD_FUNCTIONS
@@ -48,7 +42,7 @@ def _resolve_language(model_name: str) -> str:
 def _build_llm_and_prompt(model_name: str, prompt: str, language: str):
     """Build evaluator LLM client and formatted chat prompt.
 
-    Different model groups use different API key/base-url pairs.
+    All models use one unified API key/base-url pair.
 
     Args:
         model_name: Evaluator model name.
@@ -58,35 +52,12 @@ def _build_llm_and_prompt(model_name: str, prompt: str, language: str):
     Returns:
         Tuple of ``(llm, chat_prompt)`` ready for invocation.
     """
-    if model_name == "qwq-plus":
-        llm = ChatOpenAI(
-            model=model_name,
-            temperature=0.0,
-            openai_api_key=GROUP2_KEY,
-            openai_api_base=GROUP2_URL,
-            streaming=True,
-        )
-    elif model_name == "hunyuan-t1-latest":
-        llm = ChatOpenAI(
-            model=model_name,
-            temperature=0.0,
-            openai_api_key=GROUP3_KEY,
-            openai_api_base=GROUP3_URL,
-        )
-    elif model_name == "doubao-1-5-thinking-pro-250415":
-        llm = ChatOpenAI(
-            model=model_name,
-            temperature=0.0,
-            openai_api_key=GROUP4_KEY,
-            openai_api_base=GROUP4_URL,
-        )
-    else:
-        llm = ChatOpenAI(
-            model=model_name,
-            temperature=0.0,
-            openai_api_key=GROUP1_KEY,
-            openai_api_base=GROUP1_URL,
-        )
+    llm = ChatOpenAI(
+        model=model_name,
+        temperature=0.0,
+        openai_api_key=UNIFIED_API_KEY,
+        openai_api_base=UNIFIED_BASE_URL,
+    )
 
     message_suffix = PROMPT_SUFFIX_BY_LANGUAGE[language]
     chat_prompt = ChatPromptTemplate.from_messages(

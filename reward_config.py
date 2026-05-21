@@ -23,40 +23,27 @@ else:
 
 @dataclass(frozen=True)
 class ModelSpec:
-    """Per-model API routing information."""
+    """Per-model runtime information."""
 
     name: str
-    api_key_env: str
-    base_url_env: str
 
 
-# API credentials used by evaluation/runtime routing
-GROUP1_KEY = os.getenv("GROUP1_API_KEY")
-GROUP1_URL = os.getenv("GROUP1_BASE_URL")
-GROUP2_KEY = os.getenv("GROUP2_API_KEY")
-GROUP2_URL = os.getenv("GROUP2_BASE_URL")
-GROUP3_KEY = os.getenv("HUNYUAN_API_KEY")
-GROUP3_URL = os.getenv("HUNYUAN_BASE_URL")
-GROUP4_KEY = os.getenv("DOUBAO_API_KEY")
-GROUP4_URL = os.getenv("DOUBAO_BASE_URL")
+# Unified API credentials used by all generation/evaluation models
+UNIFIED_API_KEY = os.getenv("API_KEY")
+UNIFIED_BASE_URL = os.getenv("BASE_URL")
 
 # Models participating in generation/evaluation
 EVALUATION_MODELS = [
     "gemini-2.5-pro-thinking",
     "o3-mini",
-    "deepseek-r1",
-    "qwq-plus",
+    "deepseek-r1-search",
+    "qwen3.5-plus",
     "grok-3",
-    "cc-3-7-sonnet-20250219-thinking",
-    "doubao-1-5-thinking-pro-250415",
+    "claude-sonnet-4-20250514-thinking",
+    "doubao-1-5-pro-32k",
 ]
 
-# Model -> env routing for stage1 generation clients
-MODEL_ENV_OVERRIDES: dict[str, tuple[str, str]] = {
-    "qwq-plus": ("GROUP2_API_KEY", "GROUP2_BASE_URL"),
-    "doubao-1-5-thinking-pro-250415": ("DOUBAO_API_KEY", "DOUBAO_BASE_URL"),
-}
-DEFAULT_MODEL_ENV: tuple[str, str] = ("GROUP1_API_KEY", "GROUP1_BASE_URL")
+# Note: all models share one API endpoint/key (API_KEY + BASE_URL).
 
 # Evaluation parser/format config
 OUTPUT_KEYS = [
@@ -98,16 +85,10 @@ def _is_missing(value: str | None) -> bool:
 
 
 def _validate_required_env() -> None:
-    """Validate required API settings for evaluation and generation."""
+    """Validate required unified API settings for evaluation and generation."""
     required = {
-        "GROUP1_API_KEY": GROUP1_KEY,
-        "GROUP1_BASE_URL": GROUP1_URL,
-        "GROUP2_API_KEY": GROUP2_KEY,
-        "GROUP2_BASE_URL": GROUP2_URL,
-        "HUNYUAN_API_KEY": GROUP3_KEY,
-        "HUNYUAN_BASE_URL": GROUP3_URL,
-        "DOUBAO_API_KEY": GROUP4_KEY,
-        "DOUBAO_BASE_URL": GROUP4_URL,
+        "API_KEY": UNIFIED_API_KEY,
+        "BASE_URL": UNIFIED_BASE_URL,
     }
 
     missing = [name for name, value in required.items() if _is_missing(value)]
@@ -123,6 +104,7 @@ _validate_required_env()
 
 
 def get_env(name: str) -> str:
+    """Backward-compatible env getter kept for existing external imports."""
     value = os.getenv(name, "").strip()
     if not value:
         raise RuntimeError(f"Missing required environment variable: {name}")
@@ -132,6 +114,5 @@ def get_env(name: str) -> str:
 def build_spec_list() -> list[ModelSpec]:
     specs: list[ModelSpec] = []
     for model_name in EVALUATION_MODELS:
-        key_env, url_env = MODEL_ENV_OVERRIDES.get(model_name, DEFAULT_MODEL_ENV)
-        specs.append(ModelSpec(model_name, key_env, url_env))
+        specs.append(ModelSpec(model_name))
     return specs
