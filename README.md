@@ -255,11 +255,26 @@ Most impactful parameters:
 
 - `K` / `generation_size`: symbols per generation
 - `M` / `relay_memory_rows`: relay coding-memory depth
-- `num_episodes`: training episodes
+- `num_episodes` (EPISODES): training episodes
+- `num_eval_episodes` (`Max_test` in evaluation call): number of test/evaluation episodes executed each time evaluation runs
 - `eval_interval` (`Eval_interval` in code): run evaluation every N training episodes
 - `force_eval_at_end` (`Force_eval_at_end` in code): if tail episodes are fewer than `Eval_interval`, force one final evaluation
 - `max_source_sends_per_episode` (`Max_s_f`): per-episode source-send cap
 - `epsilon_decay_episodes`: exploration decay length
+
+### Recommended EPISODES / Max_test settings
+
+- **Training (recommended default)**:
+  - `EPISODES = 10000`
+  - `Max_test = 100` (faster) **or** `1000` (more stable but significantly longer training time)
+- **Testing (inference-only run)**:
+  - When running pure test/inference, `num_episodes` is not used.
+  - Use `Max_test = 1000` for more stable statistics.
+
+Notes:
+
+- In the current code path (`train.py`), evaluation is periodically triggered during training (`run_evaluate(...)`), and model selection is based on test/evaluation results.
+- The best checkpoint is selected by minimizing `avg_s_f` (average source-send count), and saved under `models/checkpoints/best_by_avg_source_send/`.
 
 ### `config_topology.py` (network graph and link reliability)
 

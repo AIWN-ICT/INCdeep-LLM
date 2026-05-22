@@ -12,9 +12,9 @@ K = 10
 M = 8
 
 # Evaluation budget per training checkpoint.
-Max_test = 10
+Max_test = 100
 # 每训练多少个 episode 执行一次 test 评估，并据此更新最佳模型。
-Eval_interval = 10
+Eval_interval = 6
 # 若训练结束时不足一个 Eval_interval，是否仍强制执行一次最终 test。
 Force_eval_at_end = True
 # Max number of source transmission rounds allowed in one episode/test.
