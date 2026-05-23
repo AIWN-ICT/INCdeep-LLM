@@ -192,6 +192,18 @@ Optional args:
 - Best checkpoint path:
   - `models/checkpoints/best_by_avg_source_send/`
 
+Best-model save rule (`train.py`):
+
+- Trigger evaluation every `eval_interval` episodes (and optionally once at the end when `force_eval_at_end=True`).
+- If current `avg_s_f` improves the historical best, overwrite best checkpoint files:
+  - `models/checkpoints/best_by_avg_source_send/dqn_agent_s_min.pt`
+  - `models/checkpoints/best_by_avg_source_send/dqn_agent_r_min.pt`
+  - `models/checkpoints/best_by_avg_source_send/best_epoch.pkl`
+  - `models/checkpoints/best_by_avg_source_send/best_metric.txt`
+- Metadata:
+  - `best_epoch.pkl`: best random-state snapshot for reproducibility.
+  - `best_metric.txt`: best episode index, current best `avg_source_send` (`avg_s_f`), and previous best value.
+
 Main result files:
 
 - `result/evaluation_avg_source_sends.txt`
@@ -203,6 +215,17 @@ Reward logging (`evaluate.py`) in short:
 - Episode normalized reward = `total_reward / source_send_count` (with zero protection).
 - `evaluation_reward.txt` stores mean normalized reward.
 - `evaluation_avg_source_sends.txt` stores `avg_s_f`.
+
+Evaluation CLI:
+
+```bash
+python main.py test --model-dir ./models/checkpoints/best_by_avg_source_send
+python test.py --model-dir models/checkpoints/best_by_avg_source_send --best-state models/checkpoints/best_by_avg_source_send/best_epoch.pkl
+```
+
+- First command: unified entry (`main.py`).
+- Second command: equivalent standalone test entry (`test.py`).
+- If `torch.compile` is unstable, append `--skip-compile`.
 
 ---
 
