@@ -33,7 +33,7 @@ LLM pipeline users must configure `.env` first.
 - [LLM reward pipeline](#llm-reward-pipeline)
 - [RL training and evaluation](#rl-training-and-evaluation)
 - [Key configuration](#key-configuration)
-- [Repository structure](#repository-structure)
+- [Core repository structure](#core-repository-structure)
 - [Checkpoints policy](#checkpoints-policy)
 - [Minimal success checklist](#minimal-success-checklist)
 - [FAQ](#faq)
@@ -214,7 +214,7 @@ Recommended settings:
 
 ---
 
-## Repository structure
+## Core repository structure
 
 ```text
 INCdeep-LLM/
