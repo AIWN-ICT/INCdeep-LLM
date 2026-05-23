@@ -383,6 +383,10 @@ After a successful training run, you should see:
 
 ## Citation
 
+This repository is the **official open-source implementation** of the following paper:
+
+Wang, Q., Li, J., Xu, Y., *INCdeep-LLM: Deep reinforcement learning for network coding with large language model-generated reward functions*, **Computer Networks**, 285:112390, 2026.
+
 If you find this project useful, please cite:
 
 ```bibtex
