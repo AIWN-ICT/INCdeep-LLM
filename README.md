@@ -390,15 +390,13 @@ Wang, Q., Li, J., Xu, Y., *INCdeep-LLM: Deep reinforcement learning for network 
 If you find this project useful, please cite:
 
 ```bibtex
-@article{WANG2026112390,
-  title   = {INCdeep-LLM: Deep reinforcement learning for network coding with large language model-generated reward functions},
-  journal = {Computer Networks},
-  volume  = {285},
-  pages   = {112390},
-  year    = {2026},
-  issn    = {1389-1286},
-  doi     = {https://doi.org/10.1016/j.comnet.2026.112390},
-  url     = {https://www.sciencedirect.com/science/article/pii/S1389128626004020}
+@article{wang2026incdeep,
+  title={INCdeep-LLM: Deep reinforcement learning for network coding with large language model-generated reward functions},
+  author={Wang, Qi and Li, Jinmou and Xu, Yongjun},
+  journal={Computer Networks},
+  pages={112390},
+  year={2026},
+  publisher={Elsevier}
 }
 ```
 
