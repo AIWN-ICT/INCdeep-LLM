@@ -15,7 +15,7 @@ Primary KPI: **`avg_s_f`** (lower is better).
 
 ## TL;DR
 
-**Fast path (no manual reward-code merge):**
+**Fast path (skip LLM reward generation/evaluation and manual reward-code merge):**
 
 ```bash
 pip install -r requirements.txt
@@ -23,6 +23,7 @@ python main.py train
 python main.py test --model-dir ./models/examples/best_by_avg_source_send
 ```
 
+This fast path trains with the built-in reward logic directly (i.e., no LLM reward generation/evaluation step and no manual reward-code merge).
 For the full LLM workflow, run the reward pipeline first, then **manually integrate** the selected reward function into `simulator.py` before training.
 LLM pipeline users must configure `.env` first.
 
