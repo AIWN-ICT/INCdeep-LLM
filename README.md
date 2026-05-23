@@ -7,7 +7,7 @@
 INCdeep-LLM is a two-stage workflow for adaptive network coding:
 
 1. **LLM reward generation + cross-model evaluation**
-2. **RL training with the selected reward function** (two DQN agents for source/relay decisions)
+2. **RL training with the selected reward function**
 
 Primary KPI: **`avg_s_f`** (lower is better).
 
@@ -21,9 +21,7 @@ python main.py train
 python main.py test --model-dir ./models/examples/best_by_avg_source_send
 ```
 
-If you only want the RL baseline, you can skip the LLM pipeline.
-
-For LLM reward generation/evaluation, configure `.env` first (see [Environment setup](#environment-setup)).
+LLM pipeline users must configure `.env` first.
 
 ---
 
@@ -31,12 +29,12 @@ For LLM reward generation/evaluation, configure `.env` first (see [Environment s
 
 - [Environment setup](#environment-setup)
 - [Quick start](#quick-start)
-- [End-to-end workflow (recommended)](#end-to-end-workflow-recommended)
+- [Recommended end-to-end workflow](#recommended-end-to-end-workflow)
 - [LLM reward pipeline](#llm-reward-pipeline)
 - [RL training and evaluation](#rl-training-and-evaluation)
 - [Key configuration](#key-configuration)
 - [Repository structure](#repository-structure)
-- [Checkpoints and repository policy](#checkpoints-and-repository-policy)
+- [Checkpoints policy](#checkpoints-policy)
 - [Minimal success checklist](#minimal-success-checklist)
 - [FAQ](#faq)
 - [Citation](#citation)
@@ -46,12 +44,15 @@ For LLM reward generation/evaluation, configure `.env` first (see [Environment s
 
 ## Environment setup
 
-Before running any LLM reward pipeline command:
-
-1. Copy `.env.example` to `.env`
+1. Copy `.env.example` to `.env`.
 2. Fill in:
    - `API_KEY`
    - `BASE_URL`
+3. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
 
 Windows (PowerShell):
 
@@ -59,16 +60,10 @@ Windows (PowerShell):
 Copy-Item .env.example .env
 ```
 
-Linux/macOS (bash):
+Linux/macOS:
 
 ```bash
 cp .env.example .env
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
 ```
 
 ---
@@ -81,130 +76,92 @@ Train:
 python main.py train
 ```
 
-Override evaluation interval temporarily (without editing `config.py`):
+Train with temporary evaluation interval override:
 
 ```bash
 python main.py train --eval-interval 5
 ```
 
-Test with the example checkpoint:
+Test with example checkpoint:
 
 ```bash
 python main.py test --model-dir ./models/examples/best_by_avg_source_send
 ```
 
-If you run `test.py` directly, you can pass explicit paths:
+Direct `test.py` usage:
 
 ```bash
 python test.py --model-dir models/best_by_avg_source_send --best-state models/best_by_avg_source_send/best_epoch.pkl
 ```
 
-If these arguments are omitted, `test.py` falls back to default paths.
-
-> If `torch.compile` is unstable in your environment, add `--skip-compile`.
+If `torch.compile` is unstable, add `--skip-compile`.
 
 ---
 
-## End-to-end workflow (recommended)
+## Recommended end-to-end workflow
 
-Recommended full path: **LLM reward evaluation → reward integration → RL training**.
-
-1. Run LLM-based reward evaluation:
+1. Run two-stage reward pipeline:
 
 ```bash
 python reward_pipeline_cli.py --mode both
 ```
 
-2. Select a reward candidate from:
-   - `result/LLM_reward/auto_eval_reward_function_ranking.csv` (overall ranking)
-   - `result/LLM_reward/auto_eval_scores_by_reward_function.csv` (per-evaluator consistency)
-
-3. Integrate the selected reward logic into `simulator.py` (`forward_data(...)`, optionally `calculate_reward(...)`).
-4. Train RL agents:
+2. Inspect ranking and consistency:
+   - `result/LLM_reward/auto_eval_reward_function_ranking.csv`
+   - `result/LLM_reward/auto_eval_scores_by_reward_function.csv`
+3. Integrate selected reward into `simulator.py` (`forward_data(...)`, optional `calculate_reward(...)`).
+4. Train RL:
 
 ```bash
 python main.py train
 ```
 
-5. Evaluate KPI (`avg_s_f`, lower is better):
-   - `result/evaluation_avg_source_sends.txt`
+5. Check KPI in `result/evaluation_avg_source_sends.txt`.
 
 ---
 
 ## LLM reward pipeline
 
-### Related files
+### Core files
 
-- CLI entry: `reward_pipeline_cli.py`
-- Two-stage orchestration: `reward_pipeline_runner.py`
-- Stage 1 generation: `reward_generation_runner.py`
-- Stage 2 evaluation/reporting: `reward_eval_runner.py`
-- Config and model routing: `reward_config.py`
-- Prompt templates: `reward_prompt_templates.py`
-- Built-in candidate assets: `reward_prompt_assets.py`
+- `reward_pipeline_cli.py` (CLI)
+- `reward_pipeline_runner.py` (orchestration)
+- `reward_generation_runner.py` (stage 1 generation)
+- `reward_eval_runner.py` (stage 2 evaluation/reporting)
+- `reward_config.py` (models/config)
+- `reward_prompt_templates.py` / `reward_prompt_assets.py`
 
-### Workflow summary
+### Pipeline summary
 
-1. **Stage 1: generation**
-   - Iterates models from `EVALUATION_MODELS` in `reward_config.py`.
-   - Selects Chinese/English prompts via `MODEL_LANGUAGE_OVERRIDES`.
-   - Calls each model through `ChatOpenAI`, extracts function code, and writes (default: `result/LLM_reward/`):
-     - `reward_generation_results.json`
-     - `reward_generation_functions.csv`
+- **Stage 1 (generation):** Generate reward candidates and save:
+  - `reward_generation_results.json`
+  - `reward_generation_functions.csv`
+- **Stage 2 (cross-model evaluation):** Each candidate is scored by other models (no self-eval) across five dimensions:
+  - Goal Consistency
+  - Exploration Effectiveness
+  - Dynamic Reward Weighting
+  - Mathematical Consistency
+  - Robustness
+- Final score = per-evaluator total (sum of 5 fields), then average across evaluators.
+- Best candidate is exported to `best_reward_function.py`.
 
-2. **Stage 2: cross-model evaluation**
-   - Uses successful Stage 1 candidates (requires at least 2).
-   - Cross-scores each candidate with other evaluator models (no self-evaluation).
-   - Uses strict JSON format and five dimensions:
-     - `Goal Consistency`
-     - `Exploration Effectiveness`
-     - `Dynamic Reward Weighting`
-     - `Mathematical Consistency`
-     - `Robustness`
-   - Per-evaluator total = sum of the five integer fields.
-   - Final ranking = average total score.
-
-3. **Best-candidate export**
-   - Exports the top candidate to `result/LLM_reward/best_reward_function.py`.
-   - Writes summary to `result/LLM_reward/two_stage_summary.json`.
-
-### CLI usage
-
-Run full two-stage flow:
+### CLI
 
 ```bash
 python reward_pipeline_cli.py --mode both
-```
-
-Run generation only:
-
-```bash
 python reward_pipeline_cli.py --mode stage1
-```
-
-Run evaluation only:
-
-```bash
 python reward_pipeline_cli.py --mode stage2
 ```
 
-Optional arguments:
+Optional args:
 
-- `--output-dir` (default: `result/LLM_reward`)
-- `--generation-output` (default: `<output-dir>/reward_generation_results.json`)
-- `--generation-csv-output` (default: `<output-dir>/reward_generation_functions.csv`)
-- `--best-output` (default: `<output-dir>/best_reward_function.py`)
-- `--summary-output` (default: `<output-dir>/two_stage_summary.json`)
+- `--output-dir` (default `result/LLM_reward`)
+- `--generation-output`
+- `--generation-csv-output`
+- `--best-output`
+- `--summary-output`
 
-### Environment variables
-
-Same required variables as [Environment setup](#environment-setup): `API_KEY`, `BASE_URL`.
-
-All configured generation/evaluation models share the same API credential and endpoint.
-
-### Stage 2 output files
-
-Default location: `result/LLM_reward/` (or the directory passed via `--output-dir`).
+### Stage 2 outputs
 
 - `auto_eval_reward_function_ranking.csv`
 - `auto_eval_scores_by_reward_function.csv`
@@ -217,34 +174,21 @@ Default location: `result/LLM_reward/` (or the directory passed via `--output-di
 
 ## RL training and evaluation
 
-### Reward logging
-
-In `evaluate.py`, metrics are defined as follows:
-
-1. For each evaluation episode, rewards from all forwarding/coding actions (source + relays across all time steps) are accumulated into `total_reward`.
-2. `source_send_count` is the episode source-send count (the same quantity used for `avg_s_f`).
-3. Episode reward is normalized by `source_send_count`:
-   - `normalized_reward = total_reward / source_send_count` (with zero protection in code).
-4. `evaluation_reward.txt` stores the mean `normalized_reward` over all evaluation episodes.
-5. `evaluation_avg_source_sends.txt` stores `avg_s_f` (mean `source_send_count` over all evaluation episodes).
-
-Best checkpoint selection criterion: minimize `avg_s_f`.
-
-Best checkpoint directory:
-
-`models/checkpoints/best_by_avg_source_send/`
-
-- `dqn_agent_s_min.pt`
-- `dqn_agent_r_min.pt`
-- `best_epoch.pkl`
-- `best_metric.txt`
+- Best checkpoint criterion: **minimize `avg_s_f`**.
+- Best checkpoint path:
+  - `models/checkpoints/best_by_avg_source_send/`
 
 Main result files:
 
 - `result/evaluation_avg_source_sends.txt`
 - `data_INCdeep_LLM/decode_probability_overhead_summary.csv`
 
-For the complete expected checkpoint file list, see [Minimal success checklist](#minimal-success-checklist).
+Reward logging (`evaluate.py`) in short:
+
+- Episode `total_reward` = sum of forwarding/coding rewards.
+- Episode normalized reward = `total_reward / source_send_count` (with zero protection).
+- `evaluation_reward.txt` stores mean normalized reward.
+- `evaluation_avg_source_sends.txt` stores `avg_s_f`.
 
 ---
 
@@ -254,47 +198,19 @@ Edit `config.py` and `config_topology.py` before experiments.
 
 Most impactful parameters:
 
-- `K` / `generation_size`: symbols per generation
-- `M` / `relay_memory_rows`: relay coding-memory depth
-- `num_episodes` (EPISODES): training episodes
-- `num_eval_episodes` (`Max_test` in evaluation call): number of test/evaluation episodes executed each time evaluation runs
-- `eval_interval` (`Eval_interval` in code): run evaluation every N training episodes
-- `force_eval_at_end` (`Force_eval_at_end` in code): if tail episodes are fewer than `Eval_interval`, force one final evaluation
-- `max_source_sends_per_episode` (`Max_s_f`): per-episode source-send cap
-- `epsilon_decay_episodes`: exploration decay length
+- `K`, `generation_size`
+- `M`, `relay_memory_rows`
+- `num_episodes` (`EPISODES`)
+- `num_eval_episodes` (`Max_test`)
+- `eval_interval` (`Eval_interval`)
+- `force_eval_at_end` (`Force_eval_at_end`)
+- `max_source_sends_per_episode` (`Max_s_f`)
+- `epsilon_decay_episodes`
 
-### Recommended EPISODES / Max_test settings
+Recommended settings:
 
-- **Training (recommended default)**:
-  - `EPISODES = 10000`
-  - `Max_test = 100` (faster) **or** `1000` (more stable but significantly longer training time)
-- **Testing (inference-only run)**:
-  - When running pure test/inference, `num_episodes` is not used.
-  - Use `Max_test = 1000` for more stable statistics.
-
-Notes:
-
-- In the current code path (`train.py`), evaluation is periodically triggered during training (`run_evaluate(...)`), and model selection is based on test/evaluation results.
-- The best checkpoint is selected by minimizing `avg_s_f` (average source-send count), and saved under `models/checkpoints/best_by_avg_source_send/`.
-
-### `config_topology.py` (network graph and link reliability)
-
-Defines forwarding topology and channel assumptions:
-
-- `node_num`
-- `parallel_path`
-- `max_nb`
-- `neighbor_matrix`
-- `links`
-
-### `data_processor.py` (post-processing and metric export)
-
-Provides evaluation statistics/CSV helpers:
-
-- source-send standard deviation
-- per-episode source-send CSV
-- decode probability curve: \(P(\text{source sends} \le t)\), `t = 1..60`
-- summary CSV with decode probability, average overhead, std deviation, and `avg_s_f`
+- Training: `EPISODES = 10000`, `Max_test = 100` (faster) or `1000` (more stable)
+- Inference-only test: `Max_test = 1000`
 
 ---
 
@@ -302,41 +218,45 @@ Provides evaluation statistics/CSV helpers:
 
 ```text
 INCdeep-LLM/
-├─ main.py                    # Unified CLI entry (`train` / `test`)
-├─ train.py                   # Training loop
-├─ test.py                    # Testing with saved checkpoints
-├─ evaluate.py                # Shared evaluation logic
-├─ simulator.py               # Forwarding/coding environment dynamics
-├─ node.py                    # Node state and behavior
-├─ config.py                  # RL and coding hyperparameters
-├─ config_topology.py         # Topology and link reliability
-├─ data_processor.py          # Metrics/statistics export
+├─ main.py
+├─ train.py
+├─ test.py
+├─ evaluate.py
+├─ simulator.py
+├─ node.py
+├─ config.py
+├─ config_topology.py
+├─ data_processor.py
+├─ reward_pipeline_cli.py
+├─ reward_pipeline_runner.py
+├─ reward_generation_runner.py
+├─ reward_eval_runner.py
+├─ reward_config.py
+├─ reward_prompt_templates.py
+├─ reward_prompt_assets.py
 ├─ utils/
-│  ├─ dqn_S.py                # Source-side DQN
-│  ├─ dqn_R.py                # Relay-side DQN
-│  └─ ReplayBuffer.py         # Replay buffer
+│  ├─ dqn_S.py
+│  ├─ dqn_R.py
+│  └─ ReplayBuffer.py
 ├─ models/
-│  ├─ checkpoints/            # local training outputs (ignored)
-│  └─ examples/               # tracked demo checkpoints
-│     └─ best_by_avg_source_send/
+│  ├─ checkpoints/
+│  └─ examples/
 └─ result/
 ```
 
 ---
 
-## Checkpoints and repository policy
+## Checkpoints policy
 
-- `models/examples/` stores demo checkpoints for quick testing/documentation.
-- `models/checkpoints/` stores local training outputs and should remain untracked.
-- For large `.pt/.pkl` files, use Git LFS when possible.
-
-For the recommended quick test command, see [Quick start](#quick-start).
+- `models/examples/`: tracked demo checkpoints for quick verification.
+- `models/checkpoints/`: local training outputs, should remain untracked.
+- Prefer Git LFS for large `.pt/.pkl` files.
 
 ---
 
 ## Minimal success checklist
 
-After a successful training run, you should see:
+After a successful training run:
 
 - `models/checkpoints/best_by_avg_source_send/dqn_agent_s_min.pt`
 - `models/checkpoints/best_by_avg_source_send/dqn_agent_r_min.pt`
@@ -350,58 +270,29 @@ After a successful training run, you should see:
 
 ### Q1: `test` cannot find model files
 
-**Symptoms**
-- Missing checkpoint errors when running `python main.py test ...`
-
-**Checklist**
-- Confirm training has completed at least once.
-- Verify required files exist (see [Minimal success checklist](#minimal-success-checklist)).
-
-**Recommended action**
-- Re-run training, then test again with a valid `--model-dir`.
+- Run training at least once.
+- Verify files in [Minimal success checklist](#minimal-success-checklist).
+- Use a valid `--model-dir`.
 
 ### Q2: When should I use `--skip-compile`?
 
-**Symptoms**
-- `torch.compile` crashes, hangs, or shows backend compatibility errors.
+Use it if `torch.compile` crashes/hangs or has backend compatibility issues.
 
-**Recommended action**
-- Add `--skip-compile` for stable execution on your platform.
+### Q3: Can I reuse old checkpoints after changing config?
 
-### Q3: Can I reuse old models after changing config?
+Usually no. Changes in state/action dimensions typically invalidate old checkpoints. Retrain.
 
-**Short answer**
-- Usually no.
+### Q4: Why is generated reward function not identical to the paper?
 
-**Why**
-- Changes to state/action dimensions (e.g., `K`, `R`, `parallel_path`, `max_nb`, `action_size`) typically invalidate old checkpoints.
-
-**Recommended action**
-- Retrain and generate new checkpoints for the new configuration.
-
-### Q4: Why is my generated reward function different from the paper?
-
-**Short answer**
-- This is expected.
-
-**Why**
-- LLM API outputs are probabilistic, so repeated generation runs may produce reward functions that are not text-identical to each other or to the paper examples.
-- In this project, reward generation serves the same optimization goal: improving network-coding training efficiency (primary KPI: `avg_s_f`, lower is better).
-- Therefore, exact string-level reproduction of a paper reward expression is less important than goal consistency and downstream performance under the same evaluation protocol.
-
-**Recommended action**
-- Keep seeds/configs/evaluation settings fixed for fair comparison.
-- Compare final metrics (especially `avg_s_f`) and report variance across multiple runs when possible.
+Expected. LLM outputs are probabilistic. Compare objective-level performance (especially `avg_s_f`) under fixed evaluation settings rather than string-level identity.
 
 ---
 
 ## Citation
 
-This repository is the **official open-source implementation** of the following paper:
+Official open-source implementation of:
 
 Wang, Q., Li, J., Xu, Y., *INCdeep-LLM: Deep reinforcement learning for network coding with large language model-generated reward functions*, **Computer Networks**, 285:112390, 2026.
-
-If you find this project useful, please cite:
 
 ```bibtex
 @article{wang2026incdeep,
@@ -418,13 +309,10 @@ If you find this project useful, please cite:
 
 ## Reproducibility notes
 
-- Default random seed in code: `555`
-- For reproducible comparisons, record:
+- Default random seed: `555`
+- Record for comparisons:
   - Python / PyTorch / CUDA versions
   - full config values
-  - episode/evaluation counts
-  - checkpoint directory used for testing
-- **LLM reward-generation variance is expected and acceptable**:
-  - LLM APIs are probabilistic, so repeated calls may produce reward functions that are not textually identical.
-  - This does **not** necessarily indicate a methodological issue, as long as generated rewards optimize the same training objective (improving network-coding efficiency, with `avg_s_f` as the primary KPI).
-  - Therefore, not reproducing the paper's reward function in an exact line-by-line form is reasonable; objective-level consistency and downstream performance are the key reproducibility criteria in this workflow.
+  - training/evaluation episode counts
+  - checkpoint directory used in testing
+- LLM generation variance is expected; evaluate consistency by downstream metrics, not exact text match.
