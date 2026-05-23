@@ -218,30 +218,30 @@ Recommended settings:
 
 ```text
 INCdeep-LLM/
-├─ main.py
-├─ train.py
-├─ test.py
-├─ evaluate.py
-├─ simulator.py
-├─ node.py
-├─ config.py
-├─ config_topology.py
-├─ data_processor.py
-├─ reward_pipeline_cli.py
-├─ reward_pipeline_runner.py
-├─ reward_generation_runner.py
-├─ reward_eval_runner.py
-├─ reward_config.py
-├─ reward_prompt_templates.py
-├─ reward_prompt_assets.py
+├─ main.py                        # unified train/test entry
+├─ train.py                       # RL training loop
+├─ test.py                        # standalone inference/evaluation entry
+├─ evaluate.py                    # KPI computation and report writing
+├─ simulator.py                   # environment dynamics + reward logic
+├─ node.py                        # source/relay node behavior
+├─ config.py                      # core experiment hyperparameters
+├─ config_topology.py             # network topology settings
+├─ data_processor.py              # data cleaning/file-name helpers
+├─ reward_pipeline_cli.py         # stage1/stage2 pipeline CLI
+├─ reward_pipeline_runner.py      # two-stage orchestration
+├─ reward_generation_runner.py    # reward candidate generation
+├─ reward_eval_runner.py          # cross-model scoring + CSV export
+├─ reward_config.py               # LLM model list and API config
+├─ reward_prompt_templates.py     # evaluation prompt templates
+├─ reward_prompt_assets.py        # built-in reward function assets
 ├─ utils/
-│  ├─ dqn_S.py
-│  ├─ dqn_R.py
-│  └─ ReplayBuffer.py
+│  ├─ dqn_S.py                    # DQN for source agent
+│  ├─ dqn_R.py                    # DQN for relay agent
+│  └─ ReplayBuffer.py             # replay buffer implementation
 ├─ models/
-│  ├─ checkpoints/
-│  └─ examples/
-└─ result/
+│  ├─ checkpoints/                # local training outputs (untracked)
+│  └─ examples/                   # tracked demo checkpoints
+└─ result/                        # evaluation and pipeline artifacts
 ```
 
 ---
