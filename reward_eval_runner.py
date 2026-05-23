@@ -189,17 +189,19 @@ def save_reports(result: Dict[str, Any], output_dir: str = ".") -> None:
     ranking_path = os.path.join(output_dir, sanitize_filename("auto_eval_reward_function_ranking.csv", fallback="ranking"))
 
     response_times_df = pd.DataFrame.from_dict(result["response_times"], orient="index")
-    response_times_df.to_csv(response_times_path, index=True, index_label="Reward_Function")
 
     avg_response_times = {}
     for model in response_times_df.columns:
         valid_times = response_times_df[model][response_times_df[model] != -1]
         avg_response_times[model] = valid_times.mean() if not valid_times.empty else -1
 
+    response_times_export_df = response_times_df.replace(-1, "FAILED").fillna("FAILED")
+    response_times_export_df.to_csv(response_times_path, index=True, index_label="Reward_Function")
+
     avg_times_df = pd.DataFrame.from_dict(avg_response_times, orient="index", columns=["Average_Response_Time"])
     avg_times_df.sort_values("Average_Response_Time", ascending=True).to_csv(avg_response_times_path)
 
-    df = pd.DataFrame.from_dict(result["scores_by_reward_function"], orient="index").fillna(0)
+    df = pd.DataFrame.from_dict(result["scores_by_reward_function"], orient="index").fillna("FAILED")
     df.to_csv(model_scores_path, index=True, index_label="Reward_Function")
 
     df_avg = pd.DataFrame(

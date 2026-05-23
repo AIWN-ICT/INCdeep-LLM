@@ -379,6 +379,20 @@ After a successful training run, you should see:
 **Recommended action**
 - Retrain and generate new checkpoints for the new configuration.
 
+### Q4: Why is my generated reward function different from the paper?
+
+**Short answer**
+- This is expected.
+
+**Why**
+- LLM API outputs are probabilistic, so repeated generation runs may produce reward functions that are not text-identical to each other or to the paper examples.
+- In this project, reward generation serves the same optimization goal: improving network-coding training efficiency (primary KPI: `avg_s_f`, lower is better).
+- Therefore, exact string-level reproduction of a paper reward expression is less important than goal consistency and downstream performance under the same evaluation protocol.
+
+**Recommended action**
+- Keep seeds/configs/evaluation settings fixed for fair comparison.
+- Compare final metrics (especially `avg_s_f`) and report variance across multiple runs when possible.
+
 ---
 
 ## Citation
@@ -410,3 +424,7 @@ If you find this project useful, please cite:
   - full config values
   - episode/evaluation counts
   - checkpoint directory used for testing
+- **LLM reward-generation variance is expected and acceptable**:
+  - LLM APIs are probabilistic, so repeated calls may produce reward functions that are not textually identical.
+  - This does **not** necessarily indicate a methodological issue, as long as generated rewards optimize the same training objective (improving network-coding efficiency, with `avg_s_f` as the primary KPI).
+  - Therefore, not reproducing the paper's reward function in an exact line-by-line form is reasonable; objective-level consistency and downstream performance are the key reproducibility criteria in this workflow.
