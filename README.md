@@ -101,37 +101,35 @@ python test.py --model-dir models/best_by_avg_source_send --best-state models/be
 
 If `torch.compile` is unstable, add `--skip-compile`.
 
-### Path B: LLM reward generation + cross-model evaluation
+### Path B: LLM-generated reward functions, evaluation, and downstream training
 
-For the full LLM-to-training flow, see [Recommended end-to-end workflow](#recommended-end-to-end-workflow).
+This path includes both stages: (1) LLM reward generation + evaluation and (2) downstream RL training.
 
-Minimal entry command:
+Run the two-stage reward pipeline first:
 
 ```bash
 python reward_pipeline_cli.py --mode both
 ```
+
+Then continue with downstream training in [Recommended end-to-end workflow](#recommended-end-to-end-workflow).
 
 ---
 
 ## Recommended end-to-end workflow
 
-1. Run two-stage reward pipeline:
-
-```bash
-python reward_pipeline_cli.py --mode both
-```
-
-2. Inspect ranking and consistency:
-   - `result/LLM_reward/auto_eval_reward_function_ranking.csv`
-   - `result/LLM_reward/auto_eval_scores_by_reward_function.csv`
-3. Integrate selected reward into `simulator.py` (`forward_data(...)`, optional `calculate_reward(...)`).
-4. Train RL:
+1. Inspect generated artifacts after running the two-stage reward pipeline (recommended order):
+   - `result/LLM_reward/auto_eval_reward_function_ranking.csv` (overall ranking)
+   - `result/LLM_reward/auto_eval_scores_by_reward_function.csv` (cross-model scoring consistency)
+   - `result/LLM_reward/auto_eval_response_times_by_reward_function.csv` (latency/failures such as `FAILED`)
+   - `result/LLM_reward/best_reward_function.py` (final exported reward code to integrate)
+2. Take `result/LLM_reward/best_reward_function.py` and manually integrate its function into `simulator.py` (`forward_data(...)`, optional `calculate_reward(...)`).
+3. Train RL:
 
 ```bash
 python main.py train
 ```
 
-5. Check KPI in `result/evaluation_avg_source_sends.txt`.
+4. Check KPI in `result/evaluation_avg_source_sends.txt`.
 
 ---
 
