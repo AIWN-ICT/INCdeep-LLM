@@ -39,6 +39,7 @@ For LLM reward generation/evaluation, configure `.env` first (see [Environment s
 - [Checkpoints and repository policy](#checkpoints-and-repository-policy)
 - [Minimal success checklist](#minimal-success-checklist)
 - [FAQ](#faq)
+- [Citation](#citation)
 - [Reproducibility notes](#reproducibility-notes)
 
 ---
@@ -377,6 +378,26 @@ After a successful training run, you should see:
 
 **Recommended action**
 - Retrain and generate new checkpoints for the new configuration.
+
+---
+
+## Citation
+
+If you find this project useful, please cite:
+
+```bibtex
+@article{WANG2026112390,
+  title   = {INCdeep-LLM: Deep reinforcement learning for network coding with large language model-generated reward functions},
+  author  = {Wang, Q. and Li, J. and Xu, Y.},
+  journal = {Computer Networks},
+  volume  = {285},
+  pages   = {112390},
+  year    = {2026},
+  issn    = {1389-1286},
+  doi     = {https://doi.org/10.1016/j.comnet.2026.112390},
+  url     = {https://www.sciencedirect.com/science/article/pii/S1389128626004020}
+}
+```
 
 ---
 
