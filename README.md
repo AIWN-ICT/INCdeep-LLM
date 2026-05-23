@@ -392,7 +392,6 @@ If you find this project useful, please cite:
 ```bibtex
 @article{WANG2026112390,
   title   = {INCdeep-LLM: Deep reinforcement learning for network coding with large language model-generated reward functions},
-  author  = {Wang, Q. and Li, J. and Xu, Y.},
   journal = {Computer Networks},
   volume  = {285},
   pages   = {112390},
