@@ -4,10 +4,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/AIWN-ICT/INCdeep-LLM/blob/main/LICENSE)
 ![Status](https://img.shields.io/badge/Status-Research%20Prototype-orange)
 
-INCdeep-LLM is a two-stage workflow for adaptive network coding:
+INCdeep-LLM supports two connected stages for adaptive network coding:
 
-1. **LLM reward generation + cross-model evaluation**
-2. **RL training with the selected reward function**
+1. **Reward pipeline: LLM reward-function generation + cross-model evaluation**
+2. **Downstream RL training with the selected reward function**
 
 Primary KPI: **`avg_s_f`** (lower is better).
 
@@ -106,7 +106,7 @@ If `torch.compile` is unstable, add `--skip-compile`.
 
 This path includes both stages: (1) LLM reward generation + evaluation and (2) downstream RL training.
 
-Run the two-stage reward pipeline first:
+Run:
 
 ```bash
 python reward_pipeline_cli.py --mode both
@@ -118,19 +118,19 @@ Then continue with downstream training in [Recommended end-to-end workflow](#rec
 
 ## Recommended end-to-end workflow
 
-1. Inspect generated artifacts after running the two-stage reward pipeline (recommended order):
+1. Inspect generated artifacts (recommended order):
    - `result/LLM_reward/auto_eval_reward_function_ranking.csv` (overall ranking)
    - `result/LLM_reward/auto_eval_scores_by_reward_function.csv` (cross-model scoring consistency)
    - `result/LLM_reward/auto_eval_response_times_by_reward_function.csv` (latency/failures such as `FAILED`)
    - `result/LLM_reward/best_reward_function.py` (final exported reward code to integrate)
-2. Take `result/LLM_reward/best_reward_function.py` and manually integrate its function into `simulator.py` (`forward_data(...)`, optional `calculate_reward(...)`).
-3. Train RL:
+3. Take `result/LLM_reward/best_reward_function.py` and manually integrate its function into `simulator.py` (`forward_data(...)`, optional `calculate_reward(...)`).
+4. Train RL:
 
 ```bash
 python main.py train
 ```
 
-4. Check KPI in `result/evaluation_avg_source_sends.txt`.
+5. Check KPI in `result/evaluation_avg_source_sends.txt`.
 
 ---
 
