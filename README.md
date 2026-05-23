@@ -15,12 +15,15 @@ Primary KPI: **`avg_s_f`** (lower is better).
 
 ## TL;DR
 
+**Fast path (no manual reward-code merge):**
+
 ```bash
 pip install -r requirements.txt
 python main.py train
 python main.py test --model-dir ./models/examples/best_by_avg_source_send
 ```
 
+For the full LLM workflow, run the reward pipeline first, then **manually integrate** the selected reward function into `simulator.py` before training.
 LLM pipeline users must configure `.env` first.
 
 ---
@@ -70,6 +73,8 @@ cp .env.example .env
 
 ## Quick start
 
+### Path A: Fast start (default/built-in reward)
+
 Train:
 
 ```bash
@@ -95,6 +100,16 @@ python test.py --model-dir models/best_by_avg_source_send --best-state models/be
 ```
 
 If `torch.compile` is unstable, add `--skip-compile`.
+
+### Path B: LLM reward generation + cross-model evaluation
+
+For the full LLM-to-training flow, see [Recommended end-to-end workflow](#recommended-end-to-end-workflow).
+
+Minimal entry command:
+
+```bash
+python reward_pipeline_cli.py --mode both
+```
 
 ---
 
