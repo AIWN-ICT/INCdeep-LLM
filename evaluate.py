@@ -54,7 +54,7 @@ def _build_source_state(nodelist, neighbor_matrix, source_id, k_data, pre_data, 
     return state
 
 
-def _run_source_phase(test_nodelist, source_id, neighbor_matrix, links, K, M, source_state_size, agent_s, extrinsic_reward):
+def _run_source_phase(test_nodelist, source_id, neighbor_matrix, links, K, M, source_state_size, agent_s, extrinsic_reward, source_send_id):
     """Run one greedy source decision phase during evaluation.
 
     Args:
@@ -93,7 +93,17 @@ def _run_source_phase(test_nodelist, source_id, neighbor_matrix, links, K, M, so
         state = next_state
 
     send_data = np.array(test_nodelist[source_id].list_action, copy=True)
-    reward = forward_data(test_nodelist, links, neighbor_matrix, source_id, send_data, K, M, extrinsic_reward)
+    reward = forward_data(
+        test_nodelist,
+        links,
+        neighbor_matrix,
+        source_id,
+        send_data,
+        K,
+        M,
+        extrinsic_reward,
+        source_send_id=source_send_id,
+    )
     return reward, 1
 
 
@@ -126,7 +136,11 @@ def _run_relay_phase(test_nodelist, node_id, neighbor_matrix, links, K, M, relay
     node.receive_flag = False
     while len(node.packet) > 0:
         processed_packets += 1
-        last_data = node.getpacket()
+        last_packet = node.getpacket()
+        if isinstance(last_packet, tuple) and len(last_packet) == 2:
+            last_data, packet_source_send_id = last_packet
+        else:
+            last_data, packet_source_send_id = last_packet, None
         node.list_action = np.zeros(K)
 
         relay_data = np.array(last_data, copy=True)
@@ -166,7 +180,17 @@ def _run_relay_phase(test_nodelist, node_id, neighbor_matrix, links, K, M, relay
         node.codememory[int(node.codelen % M)] = last_data
         node.codelen += 1
 
-        total_reward += forward_data(test_nodelist, links, neighbor_matrix, node_id, relay_data, K, M, extrinsic_reward)
+        total_reward += forward_data(
+            test_nodelist,
+            links,
+            neighbor_matrix,
+            node_id,
+            relay_data,
+            K,
+            M,
+            extrinsic_reward,
+            source_send_id=packet_source_send_id,
+        )
 
     return processed_packets, total_reward, relay_used_coding
 
@@ -257,7 +281,18 @@ def run_evaluate(
 
         while source_send_count < Max_s_f:
             if should_start_from_source:
-                reward, send_count = _run_source_phase(test_nodelist, source_id, neighbor_matrix, links, K, M, S_state_size, agent_s, extrinsic_reward)
+                reward, send_count = _run_source_phase(
+                    test_nodelist,
+                    source_id,
+                    neighbor_matrix,
+                    links,
+                    K,
+                    M,
+                    S_state_size,
+                    agent_s,
+                    extrinsic_reward,
+                    source_send_count + 1,
+                )
                 total_reward += reward
                 source_send_count += send_count
                 should_start_from_source = False
@@ -271,7 +306,10 @@ def run_evaluate(
 
             if processed_packets == 0:
                 should_start_from_source = True
-                if np.linalg.matrix_rank(test_nodelist[node_num - 1].datamemory) == K:
+                dest_node = test_nodelist[node_num - 1]
+                dest_rank_ok = np.linalg.matrix_rank(dest_node.datamemory) == K
+                dest_unique_source_packets_ok = len(dest_node.received_source_send_ids) >= K
+                if dest_rank_ok and dest_unique_source_packets_ok:
                     break
 
         # Normalize episode reward by source send count for this episode

@@ -75,7 +75,7 @@ def getneighborNum(nb_M, node_id):
     return num
 
 
-def forward_data(nodelist, links, neighbor_M, node_id, data, K, M, extrinsic_reward):
+def forward_data(nodelist, links, neighbor_M, node_id, data, K, M, extrinsic_reward, source_send_id=None):
     """Forward one packet/vector to all downstream neighbors and accumulate reward.
 
     Reward is positive when the received packet increases destination rank at the
@@ -90,6 +90,8 @@ def forward_data(nodelist, links, neighbor_M, node_id, data, K, M, extrinsic_rew
         K: Generation size.
         M: Receiver memory depth.
         extrinsic_reward: Absolute reward magnitude.
+        source_send_id: Source transmission index carried by this packet. If not
+            None, destination can track distinct source emissions received.
 
     Returns:
         Sum of rewards over all attempted transmissions.
@@ -123,7 +125,10 @@ def forward_data(nodelist, links, neighbor_M, node_id, data, K, M, extrinsic_rew
                 rank_add_des = rank2 - rank1
                 reward = calculate_reward(K, rank_add_des, rank2, extrinsic_reward)
                 sum_reward += reward
-                nodelist[i].packet.append(data)
+                packet_data = np.array(data, copy=True)
+                nodelist[i].packet.append((packet_data, source_send_id))
+                if source_send_id is not None:
+                    nodelist[i].received_source_send_ids.add(int(source_send_id))
 
                 l = nodelist[i].receivelen
                 nodelist[i].receivememory[int(l % M)] = rece_data

@@ -19,6 +19,7 @@ class NODE:
         self.list_rewards = np.zeros(K)
         self.list_len = 0
         self.packet = []
+        self.received_source_send_ids = set()
 
     def getpacket(self):
         packet = self.packet[0]

@@ -131,7 +131,7 @@ def build_source_state(nodelist, neighbor_matrix, source_id, k_data, pre_data, s
     return state
 
 
-def run_source_transmission_cycle(nodelist, source_id, neighbor_matrix, links, K, M, source_state_size, action_size, agent_s, extrinsic_reward):
+def run_source_transmission_cycle(nodelist, source_id, neighbor_matrix, links, K, M, source_state_size, action_size, agent_s, extrinsic_reward, source_send_id):
     """Run one source transmission decision cycle for a generation.
 
     Args:
@@ -178,7 +178,17 @@ def run_source_transmission_cycle(nodelist, source_id, neighbor_matrix, links, K
         state = next_state
 
     send_data = np.array(nodelist[source_id].list_action, copy=True)
-    rewards = forward_data(nodelist, links, neighbor_matrix, source_id, send_data, K, M, extrinsic_reward)
+    rewards = forward_data(
+        nodelist,
+        links,
+        neighbor_matrix,
+        source_id,
+        send_data,
+        K,
+        M,
+        extrinsic_reward,
+        source_send_id=source_send_id,
+    )
     for idx in range(nodelist[source_id].list_len):
         nodelist[source_id].list_rewards[idx] = rewards
 
@@ -212,7 +222,11 @@ def run_relay_forward_cycle(nodelist, node_id, neighbor_matrix, links, K, M, rel
     node.receive_flag = False
     while len(node.packet) > 0:
         processed_packets += 1
-        last_data = node.getpacket()
+        last_packet = node.getpacket()
+        if isinstance(last_packet, tuple) and len(last_packet) == 2:
+            last_data, packet_source_send_id = last_packet
+        else:
+            last_data, packet_source_send_id = last_packet, None
 
         init_source_episode_buffers(node, K)
 
@@ -257,7 +271,17 @@ def run_relay_forward_cycle(nodelist, node_id, neighbor_matrix, links, K, M, rel
         node.codememory[int(code_len % M)] = last_data
         node.codelen += 1
 
-        rewards = forward_data(nodelist, links, neighbor_matrix, node_id, relay_data, K, M, extrinsic_reward)
+        rewards = forward_data(
+            nodelist,
+            links,
+            neighbor_matrix,
+            node_id,
+            relay_data,
+            K,
+            M,
+            extrinsic_reward,
+            source_send_id=packet_source_send_id,
+        )
         for idx in range(node.list_len):
             node.list_rewards[idx] = rewards
 
@@ -357,6 +381,7 @@ def run_single_episode(*, nodelist, runtime: EpisodeRuntime, agent_s, agent_r):
                 action_size=runtime.action_size,
                 agent_s=agent_s,
                 extrinsic_reward=runtime.extrinsic_reward,
+                source_send_id=source_send_count + 1,
             )
             should_start_from_source = False
             continue
@@ -397,7 +422,8 @@ def run_single_episode(*, nodelist, runtime: EpisodeRuntime, agent_s, agent_r):
 
             rank = round_dest_rank_after
             flush_episode_memory_to_replay(nodelist, runtime.node_num, runtime.K, agent_s, agent_r)
-            if rank == runtime.K:
+            dest_unique_source_packets = len(nodelist[dest_idx].received_source_send_ids)
+            if rank == runtime.K and dest_unique_source_packets >= runtime.K:
                 break
 
     return source_send_count
